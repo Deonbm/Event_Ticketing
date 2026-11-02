@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [8, "Password must be at least 6 characters"],
+      minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
     role: {
@@ -28,12 +28,17 @@ const userSchema = new mongoose.Schema(
       default: "attendee",
     },
     isApproved: {
-  type: Boolean,
-  default: false,   
-},
-hostRequested: {
-  type: Boolean,
-  default: false,   
+    type: Boolean,
+    default: false,   
+    },
+    hostRequested: {
+    type: Boolean,
+    default: false,   
+    },
+    RefreshToken:{
+    type: String,
+    default: null,
+    select: false
 }
   },
   { timestamps: { createdAt: true, updatedAt: false } },

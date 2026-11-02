@@ -42,4 +42,6 @@ const loginSchema = Joi.object({
   }),
 });
 
-module.exports = { registerSchema, loginSchema };
+const refreshSchema = Joi.object({ RefreshToken: Joi.string().required() });
+
+module.exports = { registerSchema, loginSchema, refreshSchema };

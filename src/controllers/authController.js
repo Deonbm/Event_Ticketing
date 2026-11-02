@@ -1,6 +1,16 @@
-const User =require('../Models/userModel');
+const User =require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const {generateAccessToken,generateRefreshToken,hashRefreshToken,setRefreshCookie,clearRefreshCookie } =require('../utils/token')
 
+const publicUser=(user)=>{
+  return {
+    id:user._id,
+    name:user.name,
+    email:user.email,
+    role:user.role,
+    isApproved:user.isApproved
+  }
+}
 
 exports.register = async (req, res) => {
   try {    const { name, email, password } = req.body;
@@ -47,21 +57,18 @@ exports.login = async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
+         
+        
+        const accessToken = generateAccessToken(existingUser);
+        const refreshToken = generateRefreshToken(existingUser);
+        const hashedRefreshToken = hashRefreshToken(refreshToken);
+        existingUser.RefreshToken = hashedRefreshToken;
 
-        const token =jwt.sign({
-           id:existingUser._id,
-           role:existingUser.role,
-        }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        await existingUser.save();
 
-        return res.status(200).json({ message: 'Login successful', token, 
-             user: {
-    id: existingUser._id,
-    name: existingUser.name,
-    email: existingUser.email,
-    role: existingUser.role,
-    isApproved: existingUser.isApproved,
-  }
-         });
+        setRefreshCookie(res, refreshToken);
+
+        return res.status(200).json({ message: 'Login successful', accessToken, user: publicUser(existingUser) });
 
     } catch (error) {
         
@@ -71,7 +78,52 @@ exports.login = async (req, res) => {
 };
 
 
-exports.logout = (req,res)=>{
-  
-res.status(200).json({message:'Logout successful'})
+exports.refresh = async (req, res) => {
+    try {
+        const user = req.user;
+
+        // Generate only a new Access Token
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+        const hashedRefreshToken = hashRefreshToken(refreshToken);
+        user.RefreshToken = hashedRefreshToken;
+
+        await user.save();
+
+        
+    setRefreshCookie(res, refreshToken);
+
+        return res.status(200).json({
+            message: 'Token refreshed',
+            accessToken,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Internal Server Error'
+        });
+    }
+};
+
+exports.logout = async (req,res)=>{
+
+ try {
+
+    const refreshToken = req.cookies && req.cookies.refreshToken;
+
+  if(refreshToken){
+    const decoded= jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    console.log(decoded)
+
+    await User.findOneAndUpdate({_id:decoded.id,RefreshToken:hashRefreshToken(refreshToken)},
+    {RefreshToken:null});
+
+    clearRefreshCookie(res);
+  res.status(200).json({message:'Logout successful'})
+   
+  } 
+} catch (error) {
+   console.error('Logout error:', error);
+   return res.status(500).json({message:'Internal Server Error'})
+ }
 }
