@@ -1,8 +1,9 @@
-module.exports = (schema) => (req, res, next) => {
-  const { error, value } = schema.validate(req.body, {
+
+module.exports = (schema, source = 'body') => (req, res, next) => {
+  const { error, value } = schema.validate(req[source] || {}, {
     abortEarly: false,   
     stripUnknown: true,  
-    errors: { wrap: { label: false } },
+    errors: { wrap: { label: false } },  
   });
 
   if (error) {
@@ -15,6 +16,12 @@ module.exports = (schema) => (req, res, next) => {
     });
   }
 
-  req.body = value; 
+  if (source === 'body') {
+    req.body = value;
+  } else {
+     
+    req.validated = req.validated || {};
+    req.validated[source] = value;
+  }
   next();
 };

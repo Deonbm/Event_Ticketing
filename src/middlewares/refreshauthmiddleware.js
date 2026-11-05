@@ -15,7 +15,6 @@ const refreshAuth = async (req, res, next) => {
             });
         }
 
-        // Verify JWT signature and expiry
         let decoded;
 
         try {
@@ -31,7 +30,6 @@ const refreshAuth = async (req, res, next) => {
             });
         }
 
-        // Find user and retrieve stored refresh token hash
         const user = await User.findById(decoded.id)
             .select('+RefreshToken');
 

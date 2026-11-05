@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
 exports.generateAccessToken=(user)=>{
-    const token=  jwt.sign({id:user._id},process.env.JWT_SECRET,{expiresIn:'15m'});
+    const token=  jwt.sign({id:user._id,role:user.role},process.env.JWT_SECRET,{expiresIn:'15m'});
     return token;
 }
 
@@ -17,13 +17,13 @@ exports.hashRefreshToken=(token)=>{
 }
 
 const cookieOptions = () => ({
-  httpOnly: true,                                  // JavaScript in the page cannot read it
-  secure: process.env.NODE_ENV === 'production',   // HTTPS only in production
-  sameSite: 'lax',                                 // not sent with requests from other sites
-  path: '/auth',                               // browser sends it only to /api/auth/...
+  httpOnly: true,                                   
+  secure: process.env.NODE_ENV === 'production',    
+  sameSite: 'lax',                                  
+  path: '/auth',                                
 });
  
-// maxAge (milliseconds) must match the token's 7 days
+ 
 exports.setRefreshCookie = (res, token) => {
   res.cookie('refreshToken', token, {
     ...cookieOptions(),
